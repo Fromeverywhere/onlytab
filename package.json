@@ -1,0 +1,13 @@
+{
+  "name": "onlytab",
+  "version": "1.0.0",
+  "description": "极简标签页 - 纯 Node 零依赖，Docker 一键部署",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT"
+}

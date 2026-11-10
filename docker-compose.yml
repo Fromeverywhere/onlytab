@@ -1,0 +1,16 @@
+services:
+  onlytab:
+    build: .
+    image: onlytab:latest
+    container_name: onlytab
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # 默认管理员账号为 admin / OnlyTab，可在管理页「登录账号」中修改
+      # 以下两项为选填：如需用环境变量预设账号，取消注释并修改（留空则使用默认值）
+      # - ADMIN_USER=admin
+      # - ADMIN_PASSWORD=OnlyTab
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
