@@ -22,6 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compute image tag (v0.1 -> 0.1)
+        run: |
+          RAW="${GITHUB_REF_NAME:-main}"
+          echo "image_tag=${RAW#v}" >> "$GITHUB_ENV"
+          echo "image_tag=${RAW#v}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -46,7 +52,7 @@ jobs:
             ghcr.io/${{ github.repository }}
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
           tags: |
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ env.image_tag }}
             type=raw,value=latest
 
       - name: Build and push
