@@ -122,6 +122,35 @@ environment:
 
 ---
 
+## 已发布镜像（v0.1）
+
+本项目已接入 GitHub Actions：打 `v*` 标签或发布 Release 即自动构建并推送镜像，无需本地 Docker。
+
+- **GitHub Container Registry**：`ghcr.io/fromeverywhere/onlytab:0.1`（同时打 `:latest`）
+- **Docker Hub**：`fromeverywhere/onlytab:0.1`（同时打 `:latest`）
+
+拉取运行：
+
+```bash
+docker pull fromeverywhere/onlytab:0.1
+docker run -d -p 3000:3000 --name onlytab fromeverywhere/onlytab:0.1
+```
+
+> CI 通过 GitHub Secrets（`DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`）推送 Docker Hub，凭据不入库、不明文。
+
+### 绿联（UGREEN）NAS 构建示例
+
+源码已构建运行于绿联 NAS，端口映射 `19321`：
+
+```bash
+docker run -d --name onlytab -p 19321:3000 --restart unless-stopped fromeverywhere/onlytab:0.1
+# 浏览器访问 http://<绿联IP>:19321/
+```
+
+也可在 NAS 内从源码 `docker build -t onlytab:0.1 .` 后同上运行。
+
+---
+
 ## 目录结构
 
 ```
