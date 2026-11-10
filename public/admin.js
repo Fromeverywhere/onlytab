@@ -59,7 +59,8 @@ var DEFAULTS = {
     ]
   },
   weather: { mode: 'auto', city: '', provider: 'openmeteo', qweatherKey: '', qweatherPrivateKey: '', qweatherKid: '', qweatherProjectId: '' },
-  style: { columns: 8, iconSize: 46, fontWeight: 400, showSeconds: true, timeFontWeight: 200, timeFontSize: 76, timeColor: '#ffffff', tabColor: '#ffffff' },
+  style: { columns: 8, iconSize: 46, fontWeight: 400, showSeconds: true, timeFontWeight: 200, timeFontSize: 76, timeColor: '#ffffff', tabColor: '#ffffff',
+    mobileColumns: 4, mobileIconSize: 38, mobileTimeSize: 40, mobileTabFontSize: 12, mobileMaxTabs: 0 },
   tabs: [
     { name: '百度', url: 'https://www.baidu.com', icon: 'https://www.baidu.com/favicon.ico' },
     { name: '必应', url: 'https://www.bing.com', icon: 'https://www.bing.com/favicon.ico' },
@@ -416,6 +417,12 @@ function renderSite() {
   document.getElementById('styleTimeColorHex').value = st.timeColor || '#ffffff';
   document.getElementById('styleTabColor').value = toColorInput(st.tabColor);
   document.getElementById('styleTabColorHex').value = st.tabColor || '#ffffff';
+  // 手机端适配
+  document.getElementById('styleMobileColumns').value = (st.mobileColumns != null) ? st.mobileColumns : 4;
+  document.getElementById('styleMobileIcon').value = (st.mobileIconSize != null) ? st.mobileIconSize : 38;
+  document.getElementById('styleMobileTime').value = (st.mobileTimeSize != null) ? st.mobileTimeSize : 40;
+  document.getElementById('styleMobileFont').value = (st.mobileTabFontSize != null) ? st.mobileTabFontSize : 12;
+  document.getElementById('styleMobileMaxTabs').value = (st.mobileMaxTabs != null) ? st.mobileMaxTabs : 0;
 }
 
 function readSite() {
@@ -457,7 +464,12 @@ function readSite() {
     timeFontWeight: parseInt(document.getElementById('styleTimeWeight').value, 10) || 200,
     timeFontSize: parseInt(document.getElementById('styleTimeSize').value, 10) || 76,
     timeColor: normHex(document.getElementById('styleTimeColorHex').value) || normHex(document.getElementById('styleTimeColor').value) || '#ffffff',
-    tabColor: normHex(document.getElementById('styleTabColorHex').value) || normHex(document.getElementById('styleTabColor').value) || '#ffffff'
+    tabColor: normHex(document.getElementById('styleTabColorHex').value) || normHex(document.getElementById('styleTabColor').value) || '#ffffff',
+    mobileColumns: parseInt(document.getElementById('styleMobileColumns').value, 10) || 4,
+    mobileIconSize: parseInt(document.getElementById('styleMobileIcon').value, 10) || 38,
+    mobileTimeSize: parseInt(document.getElementById('styleMobileTime').value, 10) || 40,
+    mobileTabFontSize: parseInt(document.getElementById('styleMobileFont').value, 10) || 12,
+    mobileMaxTabs: Math.max(0, parseInt(document.getElementById('styleMobileMaxTabs').value, 10) || 0)
   };
 }
 

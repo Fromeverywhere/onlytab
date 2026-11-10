@@ -17,6 +17,7 @@ function wmo(c){ return WMO[c] || ['未知', '🌡️']; }
 
 var WEEK = ['日', '一', '二', '三', '四', '五', '六'];
 var SHOW_SECONDS = true;
+var MOBILE_MAX_TABS = 0; // 手机端最多显示标签数量，0 = 全部
 
 // 和风等文本天气 -> 表情
 function textToEmoji(t) {
@@ -154,7 +155,24 @@ function applyStyle(cfg){
   root.setProperty('--time-size', (s.timeFontSize || 76) + 'px');
   root.setProperty('--time-color', s.timeColor || '#ffffff');
   root.setProperty('--tab-color', s.tabColor || '#ffffff');
+  // 手机端独立设置（仅在 <=760px 的媒体查询中被引用）
+  root.setProperty('--mcols', s.mobileColumns || 4);
+  root.setProperty('--micon', (s.mobileIconSize || 38) + 'px');
+  root.setProperty('--mtime-size', (s.mobileTimeSize || 40) + 'px');
+  root.setProperty('--mtab-font', (s.mobileTabFontSize || 12) + 'px');
+  MOBILE_MAX_TABS = Math.max(0, parseInt(s.mobileMaxTabs, 10) || 0);
   SHOW_SECONDS = s.showSeconds !== false;
+}
+
+// 手机端标签数量上限：0 表示全部显示；横竖屏切换 / 窗口缩放时重算
+function applyMobileLimit() {
+  var wrap = document.getElementById('tabs');
+  if (!wrap) return;
+  var isMobile = window.matchMedia('(max-width: 760px)').matches;
+  var limit = (isMobile && MOBILE_MAX_TABS > 0) ? MOBILE_MAX_TABS : Infinity;
+  Array.prototype.forEach.call(wrap.children, function (el, i) {
+    el.style.display = (i < limit) ? '' : 'none';
+  });
 }
 
 // ---------- 日历 ----------
@@ -257,8 +275,16 @@ async function boot(){
   renderWeather();
   renderCalendar();
   renderTabs(CONFIG);
+  applyMobileLimit();
   renderFooter(CONFIG);
   addAdminLink();
+
+  // 旋转屏幕 / 改变窗口宽度时重新计算手机端标签数量上限
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applyMobileLimit, 120);
+  });
 }
 
 boot();

@@ -54,14 +54,20 @@ const DEFAULT_CONFIG = {
     qweatherProjectId: ''  // 项目 ID（控制台-项目管理 中查看，作为 JWT 的 sub）
   },
   style: {
-    columns: 8,          // 每行标签个数（横排）
+    columns: 8,          // 每行标签个数（桌面端横排）
     iconSize: 46,        // 图标大小 px
     fontWeight: 400,     // 标签字体粗细
     showSeconds: true,   // 是否显示秒
     timeFontWeight: 200, // 时钟/日期 字体粗细
     timeFontSize: 76,    // 时钟 字号(px)，日期按比例缩放
     timeColor: '#ffffff',// 时钟/日期 字体颜色（六位十六进制）
-    tabColor: '#ffffff'  // 标签下方名称 字体颜色（六位十六进制）
+    tabColor: '#ffffff', // 标签下方名称 字体颜色（六位十六进制）
+    // ---- 手机端适配（屏宽 <= 760px 生效，与桌面端互不干扰）----
+    mobileColumns: 4,       // 手机端每行标签个数
+    mobileIconSize: 38,     // 手机端图标大小 px
+    mobileTimeSize: 40,     // 手机端时钟字号 px
+    mobileTabFontSize: 12,  // 手机端标签名称字号 px
+    mobileMaxTabs: 0        // 手机端最多显示标签数量，0 = 全部显示
   },
   // 图标托管（xg-icons-hub）地址，用于「预设图标」代理拉取，避免图床防盗链 403
   iconHub: 'http://192.168.9.126:28080',
