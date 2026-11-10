@@ -26,7 +26,12 @@ const DEFAULT_CONFIG = {
     copyright: '© 2026 OnlyTab',
     icp: '',
     police: '',
-    background: '' // 空 => 使用默认渐变背景；可填 URL 或 /uploads/xxx
+    background: '', // 旧版：直接填图片 URL；留空则由下方 bgMode 控制
+    bgMode: 'default', // default(默认渐变) | preset(预设渐变) | custom(自定义色) | image(图片)
+    bgValue: '',      // preset/custom 时为 CSS 渐变/纯色；image 时为图片 URL
+    bgColor1: '#1e3c72', // 自定义渐变 色1（六位十六进制）
+    bgColor2: '#6dd5ed', // 自定义渐变 色2（六位十六进制）
+    bgImage: ''        // 背景图片 URL（image 模式使用）
   },
   search: {
     defaultEngine: 'baidu',
@@ -41,15 +46,25 @@ const DEFAULT_CONFIG = {
   weather: {
     mode: 'auto',        // auto | custom
     city: '',            // mode=custom 时使用的城市名
-    provider: 'openmeteo', // openmeteo(国际,免密钥,国内可用) | qweather(和风天气,国内源,需Key)
-    qweatherKey: ''      // 和风天气 Key（仅服务端使用，不暴露给浏览器）
+    provider: 'openmeteo', // openmeteo(国际,免密钥,国内可用) | qweather(和风天气,国内源)
+    qweatherKey: '',     // 和风天气 API KEY（旧版 ?key= 模式，仅服务端使用，不暴露）
+    // 和风天气 JWT（新版推荐，Ed25519 签名）：私钥仅服务端保存，公钥上传到和风控制台
+    qweatherPrivateKey: '', // Ed25519 私钥 PEM（由 /api/qweather-keygen 生成或自行填写）
+    qweatherKid: '',       // 凭据 ID（控制台-项目管理-凭据 中查看）
+    qweatherProjectId: ''  // 项目 ID（控制台-项目管理 中查看，作为 JWT 的 sub）
   },
   style: {
-    columns: 8,      // 每行标签个数（横排）
-    iconSize: 46,    // 图标大小 px
-    fontWeight: 400, // 标签字体粗细
-    showSeconds: true // 是否显示秒
+    columns: 8,          // 每行标签个数（横排）
+    iconSize: 46,        // 图标大小 px
+    fontWeight: 400,     // 标签字体粗细
+    showSeconds: true,   // 是否显示秒
+    timeFontWeight: 200, // 时钟/日期 字体粗细
+    timeFontSize: 76,    // 时钟 字号(px)，日期按比例缩放
+    timeColor: '#ffffff',// 时钟/日期 字体颜色（六位十六进制）
+    tabColor: '#ffffff'  // 标签下方名称 字体颜色（六位十六进制）
   },
+  // 图标托管（xg-icons-hub）地址，用于「预设图标」代理拉取，避免图床防盗链 403
+  iconHub: 'http://192.168.9.126:28080',
   account: null, // 登录账号（运行时由 initAccount 填充：{user, salt, hash}）
   tabs: [
     { name: '百度', url: 'https://www.baidu.com', icon: 'https://www.baidu.com/favicon.ico' },
@@ -198,13 +213,13 @@ function serveStatic(res, filePath) {
 const httpsMod = require('https');
 const httpMod = require('http');
 
-function fetchText(url, timeoutMs) {
+function fetchText(url, timeoutMs, extraHeaders) {
   return new Promise((resolve, reject) => {
     let redirects = 0;
     function go(u) {
       const mod = u.startsWith('https') ? httpsMod : httpMod;
       const req = mod.get(u, {
-        headers: { 'User-Agent': 'OnlyTab/1.0', 'Accept': 'application/json' }
+        headers: Object.assign({ 'User-Agent': 'OnlyTab/1.0', 'Accept': 'application/json' }, extraHeaders || {})
       }, (res) => {
         const loc = res.headers.location;
         if (res.statusCode >= 300 && res.statusCode < 400 && loc && redirects < 4) {
@@ -224,8 +239,34 @@ function fetchText(url, timeoutMs) {
   });
 }
 
+// 二进制拉取（用于图标代理）：返回 { buffer, contentType }
+function fetchBuffer(url, timeoutMs, extraHeaders) {
+  return new Promise((resolve, reject) => {
+    let redirects = 0;
+    function go(u) {
+      const mod = u.startsWith('https') ? httpsMod : httpMod;
+      const req = mod.get(u, {
+        headers: Object.assign({ 'User-Agent': 'OnlyTab/1.0' }, extraHeaders || {})
+      }, (res) => {
+        const loc = res.headers.location;
+        if (res.statusCode >= 300 && res.statusCode < 400 && loc && redirects < 4) {
+          redirects++; res.resume();
+          return go(new URL(loc, u).toString());
+        }
+        if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode)); }
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => resolve({ buffer: Buffer.concat(chunks), contentType: res.headers['content-type'] || 'application/octet-stream' }));
+      });
+      req.on('error', reject);
+      req.setTimeout(timeoutMs || 8000, () => req.destroy(new Error('timeout')));
+    }
+    go(url);
+  });
+}
+
 // 简单内存缓存：loc 缓存 1h，wx 缓存 30min
-const _cache = { loc: {}, wx: {} };
+const _cache = { loc: {}, wx: {}, icon: {} };
 function cacheGet(type, key, fn) {
   const c = _cache[type];
   const hit = c[key];
@@ -258,12 +299,54 @@ async function geoByIP() {
   return { city: '' };
 }
 
-// 城市名 -> 经纬度（有和风 Key 用和风，否则 Open-Meteo）
-async function geocode(city, key) {
-  if (key) {
+// 生成和风天气 JWT（Ed25519 / EdDSA 签名，按官方规范）
+function makeQweatherJWT(privatePem, kid, projectId) {
+  const header = { alg: 'EdDSA', kid: kid };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = { sub: projectId, iat: now - 30, exp: now + 900 };
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const data = b64(header) + '.' + b64(payload);
+  const key = crypto.createPrivateKey(privatePem);
+  const sig = crypto.sign(null, Buffer.from(data), key).toString('base64url');
+  return data + '.' + sig;
+}
+
+// 返回和风鉴权头；若配置了 JWT 则优先用 JWT，否则回退到旧版 key 查询参数
+function qweatherAuth(cfg) {
+  const w = cfg.weather || {};
+  if (w.qweatherPrivateKey && w.qweatherKid && w.qweatherProjectId) {
+    try {
+      return { headers: { Authorization: 'Bearer ' + makeQweatherJWT(w.qweatherPrivateKey, w.qweatherKid, w.qweatherProjectId) }, key: '' };
+    } catch (e) { /* 私钥异常则回退 key 模式 */ }
+  }
+  return { headers: null, key: w.qweatherKey || '' };
+}
+
+// 生成 Ed25519 密钥对（用于和风 JWT）：返回 { privateKey(PEM), publicKey(PEM) }
+function genQweatherKeyPair() {
+  const pair = crypto.generateKeyPairSync('ed25519');
+  return {
+    privateKey: pair.privateKey.export({ type: 'pkcs8', format: 'pem' }),
+    publicKey: pair.publicKey.export({ type: 'spki', format: 'pem' })
+  };
+}
+
+// 城市名 -> 经纬度（有和风则优先用和风，否则 Open-Meteo）
+async function geocode(city, cfg) {
+  const auth = qweatherAuth(cfg);
+  if (auth.headers) {
     try {
       const j = JSON.parse(await fetchText(
-        'https://geoapi.qweather.com/v2/city/lookup?location=' + encodeURIComponent(city) + '&key=' + key, 7000));
+        'https://geoapi.qweather.com/v2/city/lookup?location=' + encodeURIComponent(city), 7000, auth.headers));
+      if (j.location && j.location[0]) {
+        const l = j.location[0];
+        return { name: l.name, lat: parseFloat(l.lat), lon: parseFloat(l.lon) };
+      }
+    } catch (e) {}
+  } else if (auth.key) {
+    try {
+      const j = JSON.parse(await fetchText(
+        'https://geoapi.qweather.com/v2/city/lookup?location=' + encodeURIComponent(city) + '&key=' + auth.key, 7000));
       if (j.location && j.location[0]) {
         const l = j.location[0];
         return { name: l.name, lat: parseFloat(l.lat), lon: parseFloat(l.lon) };
@@ -283,12 +366,12 @@ async function resolveLocation(cfg) {
   let cityName, coords;
   if (cfg.weather.mode === 'custom' && cfg.weather.city) {
     cityName = cfg.weather.city;
-    coords = await geocode(cityName, cfg.weather.qweatherKey);
+    coords = await geocode(cityName, cfg);
   } else {
     const g = await geoByIP();
     cityName = g.city || '本地';
     if (!g.city) throw new Error('定位失败');
-    coords = await geocode(g.city, cfg.weather.qweatherKey);
+    coords = await geocode(g.city, cfg);
   }
   return { name: coords.name || cityName, lat: coords.lat, lon: coords.lon };
 }
@@ -309,11 +392,15 @@ async function openMeteo(lat, lon) {
   };
 }
 
-async function qweather(lat, lon, key) {
+async function qweather(lat, lon, cfg) {
   const loc = lon + ',' + lat;
+  const auth = qweatherAuth(cfg);
+  const base = 'https://devapi.qweather.com/v7/weather/';
+  const nowUrl = base + 'now?location=' + loc + (auth.key ? '&key=' + auth.key : '');
+  const dUrl = base + '7d?location=' + loc + (auth.key ? '&key=' + auth.key : '');
   const [nowT, dT] = await Promise.all([
-    fetchText('https://devapi.qweather.com/v7/weather/now?location=' + loc + '&key=' + key, 8000),
-    fetchText('https://devapi.qweather.com/v7/weather/7d?location=' + loc + '&key=' + key, 8000)
+    fetchText(nowUrl, 8000, auth.headers),
+    fetchText(dUrl, 8000, auth.headers)
   ]);
   const now = JSON.parse(nowT).now;
   const daily = JSON.parse(dT).daily;
@@ -325,8 +412,10 @@ async function qweather(lat, lon, key) {
 }
 
 async function getWeather(cfg, lat, lon) {
-  if (cfg.weather.provider === 'qweather' && cfg.weather.qweatherKey) {
-    return await qweather(lat, lon, cfg.weather.qweatherKey);
+  const w = cfg.weather || {};
+  const qwReady = w.provider === 'qweather' && (w.qweatherKey || (w.qweatherPrivateKey && w.qweatherKid && w.qweatherProjectId));
+  if (qwReady) {
+    return await qweather(lat, lon, cfg);
   }
   return await openMeteo(lat, lon);
 }
@@ -344,7 +433,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/config' && req.method === 'GET') {
       const out = Object.assign({}, config);
       delete out.account;
-      if (out.weather) { const w = Object.assign({}, out.weather); delete w.qweatherKey; out.weather = w; }
+      if (out.weather) { const w = Object.assign({}, out.weather); delete w.qweatherKey; delete w.qweatherPrivateKey; out.weather = w; }
       sendJSON(res, 200, out);
       return;
     }
@@ -382,9 +471,14 @@ const server = http.createServer(async (req, res) => {
       try { posted = JSON.parse(buf.toString('utf8')); }
       catch { sendJSON(res, 400, { error: 'invalid json' }); return; }
       const prevAccount = config.account;
+      const oldPriv = (config.weather && config.weather.qweatherPrivateKey) || '';
       config = deepMerge(DEFAULT_CONFIG, posted);
       // 账号只允许通过 /api/account 修改，普通保存不覆盖
       config.account = posted.account || prevAccount;
+      // 保护 JWT 私钥：客户端未传（或传占位/清除令牌）时保留服务端已有值
+      const newPriv = (posted.weather && posted.weather.qweatherPrivateKey) || '';
+      if (newPriv === '__CLEAR__') config.weather.qweatherPrivateKey = '';
+      else if (!newPriv) config.weather.qweatherPrivateKey = (oldPriv && oldPriv !== '__CLEAR__') ? oldPriv : '';
       saveConfig(config);
       sendJSON(res, 200, { ok: true });
       return;
@@ -464,6 +558,47 @@ const server = http.createServer(async (req, res) => {
       fs.mkdirSync(UPLOAD_DIR, { recursive: true });
       fs.writeFileSync(path.join(UPLOAD_DIR, safeName), bin);
       sendJSON(res, 200, { ok: true, url: '/uploads/' + safeName });
+      return;
+    }
+
+    // 生成和风 JWT 密钥对（需鉴权）：私钥存服务端并返回给管理员（已登录），公钥用于上传到和风控制台
+    if (pathname === '/api/qweather-keygen' && req.method === 'POST') {
+      if (!authOK(req)) { sendJSON(res, 401, { error: 'unauthorized' }); return; }
+      try {
+        const kp = genQweatherKeyPair();
+        config.weather = config.weather || {};
+        config.weather.qweatherPrivateKey = kp.privateKey;
+        saveConfig(config);
+        sendJSON(res, 200, { ok: true, publicKey: kp.publicKey, privateKey: kp.privateKey });
+      } catch (e) {
+        sendJSON(res, 500, { error: String(e && e.message || e) });
+      }
+      return;
+    }
+
+    // 图标代理：服务端拉取图标 hub 图片并流式返回，规避图床防盗链（仅允许 iconHub 域名）
+    if (pathname === '/api/icon' && req.method === 'GET') {
+      const u = parsed.searchParams.get('u');
+      if (!u) { sendJSON(res, 400, { error: 'missing u' }); return; }
+      let target;
+      try { target = new URL(decodeURIComponent(u)); } catch (e) { sendJSON(res, 400, { error: 'bad url' }); return; }
+      let allowedHost;
+      try { allowedHost = new URL(config.iconHub || 'http://192.168.9.126:28080').host; } catch (e) { allowedHost = '192.168.9.126:28080'; }
+      if (target.protocol !== 'http:' && target.protocol !== 'https:') { sendJSON(res, 403, { error: 'forbidden' }); return; }
+      if (target.host !== allowedHost) { sendJSON(res, 403, { error: 'forbidden host' }); return; }
+      try {
+        const cached = _cache.icon[target.href];
+        if (cached && Date.now() - cached.t < 3600000) {
+          res.writeHead(200, { 'Content-Type': cached.type, 'Cache-Control': 'public, max-age=3600' });
+          return res.end(cached.buf);
+        }
+        const r = await fetchBuffer(target.href, 10000);
+        _cache.icon[target.href] = { t: Date.now(), buf: r.buffer, type: r.contentType };
+        res.writeHead(200, { 'Content-Type': r.contentType, 'Cache-Control': 'public, max-age=3600' });
+        res.end(r.buffer);
+      } catch (e) {
+        sendJSON(res, 502, { error: 'fetch failed: ' + String(e && e.message || e) });
+      }
       return;
     }
 

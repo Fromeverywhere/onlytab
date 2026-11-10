@@ -41,6 +41,35 @@
     .mask { position: fixed; inset: 0; background: rgba(234,242,252,0.94); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .mask .box { background: #fff; border: 1px solid #dbe7f5; border-radius: 14px; padding: 26px; width: 320px; box-shadow: 0 10px 40px rgba(31,77,140,0.18); }
     .mask h3 { margin-bottom: 14px; color: #0f2440; }
+    /* 颜色选择行 */
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    .color-row input[type=color] { width: 44px; height: 38px; padding: 2px; border: 1px solid #cdd9e8; border-radius: 8px; background: #f7fbff; cursor: pointer; flex: 0 0 44px; }
+    .color-row input[type=text] { flex: 1; }
+    /* 背景色板 / 图片预设 */
+    .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .swatch { width: 86px; height: 54px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; box-shadow: 0 1px 6px rgba(31,77,140,0.12); position: relative; }
+    .swatch.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+    .swatch .lbl { position:absolute; left:0; right:0; bottom:0; font-size:11px; color:#fff; text-shadow:0 1px 3px #000; text-align:center; background:rgba(0,0,0,0.28); border-radius:0 0 8px 8px; padding:1px 0; }
+    textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; }
+    /* 紧凑标签编辑 */
+    .tabs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 10px; margin-top: 8px; }
+    .tedit { background:#f4f9ff; border:1px solid #dbe7f5; border-radius:10px; padding:8px 10px; }
+    .tedit .trow { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+    .tedit .ic { width:34px;height:34px;border-radius:8px;object-fit:cover;background:#e3edfb;flex:0 0 34px;display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden;cursor:pointer; }
+    .tedit input { padding:6px 8px; font-size:13px; }
+    .tedit .mini { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+    .tedit .mini button { font-size:11px; padding:3px 7px; }
+    .pickbtn { font-size:11px; color:#2563eb; cursor:pointer; user-select:none; }
+    /* 预设图标选择弹层 */
+    .iconpick { display:none; position:fixed; inset:0; background:rgba(15,36,64,0.5); z-index:200; align-items:center; justify-content:center; }
+    .iconpick.show { display:flex; }
+    .iconpick .box { background:#fff; border-radius:14px; padding:16px; width:min(700px,94vw); max-height:84vh; overflow:auto; box-shadow:0 10px 40px rgba(31,77,140,0.25); }
+    .iconpick .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(74px,1fr)); gap:10px; margin-top:10px; }
+    .iconpick .cell { text-align:center; cursor:pointer; border-radius:10px; padding:6px 2px; border:1px solid #e3edfb; background:#f7fbff; }
+    .iconpick .cell:hover { border-color:#3b82f6; }
+    .iconpick .cell img { width:40px;height:40px;object-fit:contain; }
+    .iconpick .cell .n { font-size:11px; color:#334e68; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .iconpick .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -69,9 +98,30 @@
       <h2><span class="dot"></span>站点与底部信息</h2>
       <label>站点标题（浏览器标签名）</label>
       <input type="text" id="siteTitle" />
-      <label>默认背景（留空使用默认渐变；可填图片 URL 或上传本地图片）</label>
+      <label>背景设置</label>
+      <select id="bgMode">
+        <option value="default">默认渐变（系统自带）</option>
+        <option value="preset">预设渐变方案</option>
+        <option value="custom">自定义颜色（两个十六进制色）</option>
+        <option value="image">背景图片（URL 或下方预设）</option>
+      </select>
+      <label>预设渐变方案（选“预设渐变方案”时点击）</label>
+      <div class="swatches" id="bgSwatches"></div>
       <div class="row">
-        <div><input type="text" id="siteBg" placeholder="https://... 或 /uploads/xxx" /></div>
+        <div>
+          <label>渐变色 1（六位十六进制）</label>
+          <div class="color-row"><input type="color" id="bgColor1" /><input type="text" id="bgColor1Hex" placeholder="#1e3c72" maxlength="7" /></div>
+        </div>
+        <div>
+          <label>渐变色 2（六位十六进制）</label>
+          <div class="color-row"><input type="color" id="bgColor2" /><input type="text" id="bgColor2Hex" placeholder="#6dd5ed" maxlength="7" /></div>
+        </div>
+      </div>
+      <label>背景图片预设（选“背景图片”时点击，来自公开图床，不存本地）</label>
+      <div class="swatches" id="bgImages"></div>
+      <label>背景图片 URL（自定义，或点上方预设；也可本地上传）</label>
+      <div class="row">
+        <div><input type="text" id="bgImage" placeholder="https://... 图片地址" /></div>
         <div style="flex:0 0 auto;"><span class="filebtn" id="siteBgUp">上传背景图</span><input type="file" id="siteBgFile" accept="image/*" class="hidden" /></div>
       </div>
       <label>版权信息</label>
@@ -126,8 +176,36 @@
         <option value="openmeteo">Open-Meteo（国际源，免密钥，国内可用）</option>
         <option value="qweather">和风天气（国内源，需下方 Key）</option>
       </select>
-      <label>和风天气 Key（仅在使用“和风天气”时填写；服务端使用，不会暴露给浏览器）</label>
+      <label>和风天气 Key（旧版 API KEY 模式；仅在使用“和风天气”且未配置下方 JWT 时填写）</label>
       <input type="text" id="weatherKey" placeholder="和风天气 Dev Key" />
+      <div style="margin-top:14px; border-top:1px dashed #cdd9e8; padding-top:12px;">
+        <label style="font-weight:600; color:#243b5e;">和风天气 JWT 鉴权（新版推荐，Ed25519 签名）</label>
+        <div class="row" style="margin-top:6px;">
+          <div style="flex:1">
+            <label>JWT 私钥（自动保存于服务端；公钥请上传到和风控制台）</label>
+            <textarea id="weatherPrivKey" rows="3" placeholder="-----BEGIN PRIVATE KEY----- ..."></textarea>
+          </div>
+          <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:8px; justify-content:flex-start;">
+            <button class="btn ghost sm" id="genKeyBtn" type="button">生成密钥对</button>
+            <button class="btn ghost sm" id="copyPubBtn" type="button">复制公钥</button>
+          </div>
+        </div>
+        <div id="pubKeyBox" style="display:none; margin-top:8px;">
+          <label>公钥（去 和风控制台 → 项目管理 → 你的项目 → 凭据 → 添加凭据，认证方式选“JSON Web Token”，粘贴下面内容）</label>
+          <textarea id="pubKeyArea" rows="3" readonly></textarea>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label>凭据 ID（kid，控制台凭据处查看）</label>
+            <input type="text" id="weatherKid" placeholder="如 QWT12345" />
+          </div>
+          <div>
+            <label>项目 ID（sub，控制台项目管理处查看）</label>
+            <input type="text" id="weatherProjectId" placeholder="如 QWP12345" />
+          </div>
+        </div>
+        <div class="hint" style="font-size:12px; color:#5b6b82; margin-top:6px;">已配置 私钥 + kid + 项目ID 时自动走 JWT；否则回退旧版 Key 模式。私钥仅存服务端，公开接口已剔除。</div>
+      </div>
     </div>
 
     <!-- 样式设置 -->
@@ -145,7 +223,7 @@
       </div>
       <div class="row">
         <div>
-          <label>字体粗细</label>
+          <label>标签名称 粗细</label>
           <select id="styleWeight">
             <option value="300">细 (300)</option>
             <option value="400">常规 (400)</option>
@@ -162,13 +240,50 @@
           </select>
         </div>
       </div>
+      <div style="margin-top:6px; border-top:1px dashed #cdd9e8; padding-top:12px;">
+        <label style="font-weight:600; color:#243b5e;">时钟 / 日期 字体</label>
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label>字号 (px)</label>
+            <input type="number" id="styleTimeSize" min="32" max="160" step="2" />
+          </div>
+          <div>
+            <label>粗细</label>
+            <select id="styleTimeWeight">
+              <option value="100">极细 (100)</option>
+              <option value="200">特细 (200)</option>
+              <option value="300">细 (300)</option>
+              <option value="400">常规 (400)</option>
+              <option value="500">中等 (500)</option>
+              <option value="600">加粗 (600)</option>
+              <option value="700">特粗 (700)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>时钟/日期 颜色（六位十六进制）</label>
+            <div class="color-row">
+              <input type="color" id="styleTimeColor" />
+              <input type="text" id="styleTimeColorHex" placeholder="#ffffff" maxlength="7" />
+            </div>
+          </div>
+          <div>
+            <label>标签名称 颜色（六位十六进制）</label>
+            <div class="color-row">
+              <input type="color" id="styleTabColor" />
+              <input type="text" id="styleTabColorHex" placeholder="#ffffff" maxlength="7" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 标签 -->
     <div class="card">
-      <h2><span class="dot"></span>导航标签（每行个数见「样式设置」）</h2>
-      <div id="tabs"></div>
-      <button class="btn ghost sm" id="addTab" style="margin-top:6px;">+ 添加标签</button>
+      <h2><span class="dot"></span>导航标签（紧凑编辑；每行个数见「样式设置」）</h2>
+      <div id="tabs" class="tabs-grid"></div>
+      <button class="btn ghost sm" id="addTab" style="margin-top:10px;">+ 添加标签</button>
     </div>
 
     <div class="savebar">
@@ -177,6 +292,14 @@
         <button class="btn ghost" id="resetBtn">恢复默认</button>
         <button class="btn" id="saveBtn">保存</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 预设图标选择弹层 -->
+  <div class="iconpick" id="iconPick">
+    <div class="box">
+      <div class="topbar"><b>选择预设图标（来自 xg-icons-hub，经服务端代理）</b><span class="pickbtn" id="iconPickClose">关闭 ✕</span></div>
+      <div class="grid" id="iconPickGrid"></div>
     </div>
   </div>
 

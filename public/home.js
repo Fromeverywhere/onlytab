@@ -35,14 +35,31 @@ function textToEmoji(t) {
 var CONFIG = null;
 
 function applyBackground(cfg){
-  var bg = cfg.site && cfg.site.background;
-  if (bg && (bg.startsWith('http') || bg.startsWith('/') || bg.startsWith('data:'))) {
-    document.body.style.backgroundImage = 'url("' + bg + '")';
+  var s = cfg.site || {};
+  if (s.title) document.title = s.title;
+  // 图片背景模式
+  if (s.bgMode === 'image' && s.bgValue) {
+    document.body.style.backgroundImage = 'url("' + s.bgValue + '")';
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundColor = 'transparent';
+    return;
+  }
+  // 预设渐变 / 自定义颜色模式（bgValue 为渐变或纯色 CSS）
+  if ((s.bgMode === 'preset' || s.bgMode === 'custom') && s.bgValue) {
+    document.body.style.background = s.bgValue;
+    document.body.style.backgroundImage = 'none';
+    return;
+  }
+  // 兼容旧版：直接填了 background（图片 URL）
+  if (s.background && (s.background.startsWith('http') || s.background.startsWith('/') || s.background.startsWith('data:'))) {
+    document.body.style.backgroundImage = 'url("' + s.background + '")';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundRepeat = 'no-repeat';
   }
   // 否则保留 CSS 默认渐变
-  if (cfg.site && cfg.site.title) document.title = cfg.site.title;
 }
 
 // ---------- 时钟 ----------
@@ -133,6 +150,10 @@ function applyStyle(cfg){
   root.setProperty('--cols', s.columns || 8);
   root.setProperty('--icon-size', (s.iconSize || 46) + 'px');
   root.setProperty('--tab-weight', s.fontWeight || 400);
+  root.setProperty('--time-weight', s.timeFontWeight || 200);
+  root.setProperty('--time-size', (s.timeFontSize || 76) + 'px');
+  root.setProperty('--time-color', s.timeColor || '#ffffff');
+  root.setProperty('--tab-color', s.tabColor || '#ffffff');
   SHOW_SECONDS = s.showSeconds !== false;
 }
 
