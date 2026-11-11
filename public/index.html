@@ -20,35 +20,14 @@
     </form>
   </div>
 
-  <!-- 中部：天气 + 日历 -->
-  <div class="panels">
-    <div class="panel glass" id="weatherPanel">
-      <div class="weather-head">
-        <span class="weather-city" id="weatherCity">天气</span>
-        <span class="hint" id="weatherStatus"></span>
-      </div>
-      <div class="weather-temp" id="weatherTemp">--°</div>
-      <div class="weather-desc" id="weatherDesc"></div>
-      <div class="weather-hl" id="weatherHL"></div>
-      <div class="forecast" id="forecast"></div>
-    </div>
-
-    <div class="panel glass" id="calendarPanel">
-      <div class="calendar-head">
-        <span class="calendar-title" id="calTitle"></span>
-        <span class="hint" id="calLunar"></span>
-      </div>
-      <div class="calendar-big" id="calBig"></div>
-      <div class="calendar-sub" id="calSub"></div>
-      <div class="calendar-grid" id="calGrid"></div>
-    </div>
-  </div>
-
-  <!-- 标签网格 -->
-  <div class="tabs-wrap" id="tabs"></div>
+  <!-- 混排面板：天气/日历小组件 + 标签，可在首页直接拖动排序 -->
+  <div class="board" id="board"></div>
 
   <!-- 底部 -->
   <div class="footer" id="footer"></div>
+
+  <!-- 排序提示 -->
+  <div class="toast" id="toast"></div>
 
   <script src="lunar.js"></script>
   <script src="home.js"></script>

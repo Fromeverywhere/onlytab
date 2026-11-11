@@ -7,12 +7,23 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body { background: linear-gradient(135deg,#eaf2fc 0%,#dbe9fb 100%); display: block; align-items: unset; color: #1f2d3d; min-height: 100vh; }
-    .admin { max-width: 920px; margin: 0 auto; padding: 28px 18px 80px; }
+    .admin { max-width: 980px; margin: 0 auto; padding: 28px 18px 80px; }
     .admin h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #0f2440; }
-    .admin .sub { color: #5b6b82; font-size: 13px; margin-bottom: 22px; }
+    .admin .sub { color: #5b6b82; font-size: 13px; margin-bottom: 16px; }
+    /* 子页面导航 */
+    .nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px; margin-bottom: 18px;
+      background: rgba(255,255,255,0.75); border: 1px solid #dbe7f5; border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(31,77,140,0.06); position: sticky; top: 8px; z-index: 40;
+      backdrop-filter: blur(8px); }
+    .nav button { flex: 1 1 auto; min-width: 108px; border: none; background: transparent;
+      color: #48607d; font-size: 13px; font-weight: 600; padding: 9px 12px;
+      border-radius: 10px; cursor: pointer; transition: background .18s, color .18s; }
+    .nav button:hover { background: #e8f1fd; color: #1f4d8f; }
+    .nav button.active { background: #3b82f6; color: #fff; box-shadow: 0 3px 10px rgba(59,130,246,.3); }
     .card { background: #ffffff; border: 1px solid #dbe7f5; border-radius: 14px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 2px 12px rgba(31,77,140,0.06); }
     .card h2 { font-size: 15px; margin-bottom: 14px; color: #243b5e; display: flex; align-items: center; gap: 8px; }
     .card h2 .dot { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; }
+    .card .desc { font-size: 12px; color: #5b6b82; margin: -6px 0 12px; line-height: 1.7; }
     label { display: block; font-size: 12px; color: #5b6b82; margin: 10px 0 4px; }
     input[type=text], input[type=password], input[type=url], input[type=number], select, textarea {
       width: 100%; background: #f7fbff; border: 1px solid #cdd9e8; color: #1f2d3d;
@@ -29,12 +40,9 @@
     .btn.danger:hover { background: #fecaca; }
     .btn.sm { padding: 5px 10px; font-size: 12px; }
     .item { background: #f4f9ff; border: 1px solid #dbe7f5; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
-    .item .top { display: flex; gap: 8px; align-items: flex-end; }
-    .item .iconsm { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: #e3edfb; flex: 0 0 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; }
     .item .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .item .filebtn { font-size: 12px; color: #2563eb; cursor: pointer; }
-    .savebar { position: sticky; bottom: 0; background: rgba(234,242,252,0.92); border-top: 1px solid #cdd9e8; padding: 14px 0; margin-top: 10px; backdrop-filter: blur(6px); }
-    .savebar .inner { max-width: 920px; margin: 0 auto; padding: 0 18px; display: flex; gap: 10px; justify-content: flex-end; }
+    .savebar { position: sticky; bottom: 0; background: rgba(234,242,252,0.94); border-top: 1px solid #cdd9e8; padding: 14px 0; margin-top: 10px; backdrop-filter: blur(8px); z-index: 45; }
+    .savebar .inner { max-width: 980px; margin: 0 auto; padding: 0 18px; display: flex; gap: 10px; justify-content: flex-end; }
     .status { font-size: 13px; color: #16a34a; margin-right: auto; }
     .backlink { color: #2563eb; font-size: 13px; text-decoration: none; }
     /* 登录遮罩 */
@@ -45,12 +53,53 @@
     .color-row { display: flex; gap: 8px; align-items: center; }
     .color-row input[type=color] { width: 44px; height: 38px; padding: 2px; border: 1px solid #cdd9e8; border-radius: 8px; background: #f7fbff; cursor: pointer; flex: 0 0 44px; }
     .color-row input[type=text] { flex: 1; }
-    /* 背景色板 / 图片预设 */
+    /* 背景色板 / 模式卡片 */
+    .mode-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .mode-card { display: block; border: 2px solid #dbe7f5; border-radius: 12px; padding: 8px;
+      background: #f7fbff; cursor: pointer; transition: border-color .18s, box-shadow .18s, transform .18s; }
+    .mode-card:hover { transform: translateY(-2px); border-color: #9dc2f0; }
+    .mode-card.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+    .mode-card input { display: none; }
+    .mode-card .prev { height: 58px; border-radius: 8px; background-size: cover; background-position: center; }
+    .mode-card b { display: block; font-size: 13px; color: #243b5e; margin-top: 7px; }
+    .mode-card small { display: block; font-size: 11px; color: #7b8ca3; margin-top: 2px; }
     .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
     .swatch { width: 86px; height: 54px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; box-shadow: 0 1px 6px rgba(31,77,140,0.12); position: relative; }
     .swatch.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
     .swatch .lbl { position:absolute; left:0; right:0; bottom:0; font-size:11px; color:#fff; text-shadow:0 1px 3px #000; text-align:center; background:rgba(0,0,0,0.28); border-radius:0 0 8px 8px; padding:1px 0; }
+    /* 未选中的背景模式：整体灰掉且不可编辑 */
+    .bg-section { margin-top: 12px; padding: 12px 14px; border: 1px solid #e3edfb; border-radius: 12px;
+      background: #fafcff; transition: opacity .2s, filter .2s; }
+    .bg-section .sec-title { font-size: 13px; font-weight: 700; color: #243b5e; margin-bottom: 4px; }
+    .bg-section.disabled { opacity: .4; filter: grayscale(1); }
+    .bg-section.disabled * { pointer-events: none !important; }
     textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; }
+    /* 上传背景图（重做） */
+    .upload-zone { display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border: 2px dashed #b9d2f0; border-radius: 12px; cursor: pointer;
+      background: linear-gradient(135deg,#f7fbff 0%,#eaf3ff 100%); transition: border-color .18s, background .18s; }
+    .upload-zone:hover, .upload-zone.over { border-color: #3b82f6; background: linear-gradient(135deg,#eef6ff 0%,#dfefff 100%); }
+    .uz-icon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 12px; background: #dbeafe;
+      color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .uz-text { flex: 1; min-width: 0; }
+    .uz-text b { display: block; font-size: 13px; color: #1f4d8f; }
+    .uz-text small { display: block; font-size: 11px; color: #7b8ca3; margin-top: 2px; }
+    .uz-preview { width: 68px; height: 46px; flex: 0 0 68px; object-fit: cover; border-radius: 8px; border: 1px solid #cdd9e8; }
+    .blur-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+    .blur-row label { margin: 0; flex: 0 0 auto; }
+    .blur-row input[type=range] { flex: 1; min-width: 80px; accent-color: #3b82f6; height: 22px; padding: 0; border: none; background: transparent; box-shadow: none; }
+    .blur-row input[type=number] { flex: 0 0 84px; width: 84px; }
+    /* 时钟预览 */
+    .time-preview { margin-top: 8px; border-radius: 12px; padding: 18px 12px; text-align: center; color: #fff;
+      background: linear-gradient(135deg,#1e3c72 0%,#2a5298 50%,#6dd5ed 100%); text-shadow: 0 2px 12px rgba(0,0,0,.3); }
+    .time-preview .tp-clock { font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .time-preview .tp-date { margin-top: 4px; opacity: .88; }
+    /* 操作步骤 / 说明 */
+    .steps { background: #f4f9ff; border: 1px solid #dbe7f5; border-radius: 10px; padding: 12px 14px;
+      font-size: 12.5px; line-height: 1.9; color: #334e68; margin-top: 8px; }
+    .steps b { color: #0f2440; }
+    .steps ol { padding-left: 20px; margin: 4px 0; }
+    .steps code { background: #e3edfb; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
     /* 紧凑标签编辑 */
     .tabs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 10px; margin-top: 8px; }
     .tedit { background:#f4f9ff; border:1px solid #dbe7f5; border-radius:10px; padding:8px 10px; }
@@ -71,20 +120,23 @@
     .iconpick .cell .n { font-size:11px; color:#334e68; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .iconpick .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
     .hidden { display: none !important; }
-    /* 管理页自身的窄屏适配：手机上也能改配置 */
+    /* 管理页自身的窄屏适配 */
     @media (max-width: 640px) {
       .admin { padding: 18px 12px 96px; }
       .admin h1 { font-size: 19px; }
       .card { padding: 14px; border-radius: 12px; margin-bottom: 12px; }
       .row > div { flex: 1 1 100%; }
-      /* 输入框 >=16px 可避免 iOS 聚焦时自动放大页面 */
       input[type=text], input[type=password], input[type=url], input[type=number], select, textarea { font-size: 16px; }
       .tedit input { font-size: 16px; }
+      .nav { top: 0; gap: 4px; padding: 4px; }
+      .nav button { min-width: 0; flex: 1 1 30%; font-size: 12px; padding: 8px 6px; }
       .tabs-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
       .iconpick .box { width: 96vw; padding: 12px; max-height: 88vh; }
       .iconpick .grid { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; }
       .iconpick .cell img { width: 32px; height: 32px; }
       .swatch { width: 72px; height: 46px; }
+      .upload-zone { padding: 10px; gap: 8px; }
+      .uz-preview { width: 52px; flex: 0 0 52px; }
       .mask .box { width: min(320px, 90vw); padding: 20px; }
       .savebar .inner { padding: 0 12px; gap: 8px; }
       .btn { padding: 9px 14px; }
@@ -100,9 +152,7 @@
       <input type="text" id="loginUser" placeholder="admin" autocomplete="off" />
       <label style="margin-top:10px;">密码</label>
       <input type="password" id="loginPass" placeholder="请输入密码" autocomplete="off" />
-      <div style="margin-top:14px; text-align:right;">
-        <button class="btn" id="loginBtn">进入</button>
-      </div>
+      <div style="margin-top:14px; text-align:right;"><button class="btn" id="loginBtn">进入</button></div>
       <div id="loginErr" style="color:#dc2626; font-size:12px; margin-top:8px;"></div>
     </div>
   </div>
@@ -111,241 +161,297 @@
     <h1>OnlyTab 管理后台</h1>
     <div class="sub">所有修改点击「保存」后即时生效（写入 data/config.json）。<a class="backlink" href="/">← 返回首页</a></div>
 
-    <!-- 站点信息 -->
-    <div class="card">
-      <h2><span class="dot"></span>站点与底部信息</h2>
-      <label>站点标题（浏览器标签名）</label>
-      <input type="text" id="siteTitle" />
-      <label>背景设置</label>
-      <select id="bgMode">
-        <option value="default">默认渐变（系统自带）</option>
-        <option value="preset">预设渐变方案</option>
-        <option value="custom">自定义颜色（两个十六进制色）</option>
-        <option value="image">背景图片（URL 或下方预设）</option>
-      </select>
-      <label>预设渐变方案（选“预设渐变方案”时点击）</label>
-      <div class="swatches" id="bgSwatches"></div>
-      <div class="row">
-        <div>
-          <label>渐变色 1（六位十六进制）</label>
-          <div class="color-row"><input type="color" id="bgColor1" /><input type="text" id="bgColor1Hex" placeholder="#1e3c72" maxlength="7" /></div>
-        </div>
-        <div>
-          <label>渐变色 2（六位十六进制）</label>
-          <div class="color-row"><input type="color" id="bgColor2" /><input type="text" id="bgColor2Hex" placeholder="#6dd5ed" maxlength="7" /></div>
-        </div>
-      </div>
-      <label>背景图片预设（选“背景图片”时点击，来自公开图床，不存本地）</label>
-      <div class="swatches" id="bgImages"></div>
-      <label>背景图片 URL（自定义，或点上方预设；也可本地上传）</label>
-      <div class="row">
-        <div><input type="text" id="bgImage" placeholder="https://... 图片地址" /></div>
-        <div style="flex:0 0 auto;"><span class="filebtn" id="siteBgUp">上传背景图</span><input type="file" id="siteBgFile" accept="image/*" class="hidden" /></div>
-      </div>
-      <label>版权信息</label>
-      <input type="text" id="siteCopyright" placeholder="© 2026 OnlyTab" />
-      <div class="row">
-        <div>
-          <label>ICP 备案号（底部展示，自动链接到 beian.miit.gov.cn）</label>
-          <input type="text" id="siteIcp" placeholder="京ICP备XXXXXXXX号" />
-        </div>
-        <div>
-          <label>网安备案号（底部展示，自动链接到 beian.gov.cn）</label>
-          <input type="text" id="sitePolice" placeholder="京公网安备 XXXXXXXXXXXXXX号" />
-        </div>
-      </div>
-    </div>
+    <nav class="nav" id="nav">
+      <button type="button" data-page="site" class="active">站点与样式</button>
+      <button type="button" data-page="bg">背景</button>
+      <button type="button" data-page="search">搜索引擎</button>
+      <button type="button" data-page="widgets">小组件</button>
+      <button type="button" data-page="tabs">标签</button>
+      <button type="button" data-page="account">登录账号</button>
+    </nav>
 
-    <!-- 登录账号 -->
-    <div class="card">
-      <h2><span class="dot"></span>登录账号</h2>
-      <label>用户名（默认 admin，可修改）</label>
-      <input type="text" id="accUser" placeholder="admin" />
-      <label style="margin-top:10px;">新密码（留空则仅修改用户名；填写则至少 6 位）</label>
-      <input type="password" id="accPass" placeholder="不修改请留空" />
-      <div style="margin-top:12px;">
-        <button class="btn" id="accBtn">修改账号 / 密码</button>
-      </div>
-      <div id="accStatus" style="font-size:12px; margin-top:8px;"></div>
-    </div>
-
-    <!-- 搜索 -->
-    <div class="card">
-      <h2><span class="dot"></span>搜索引擎</h2>
-      <label>默认搜索引擎</label>
-      <select id="searchDefault"></select>
-      <label>引擎列表（搜索链接中使用 <code>{q}</code> 作为关键词占位符）</label>
-      <div id="engines"></div>
-      <button class="btn ghost sm" id="addEngine" style="margin-top:10px;">+ 添加引擎</button>
-    </div>
-
-    <!-- 天气 -->
-    <div class="card">
-      <h2><span class="dot"></span>天气组件</h2>
-      <label>定位方式</label>
-      <select id="weatherMode">
-        <option value="auto">自动（按访问者 IP 定位，国内源）</option>
-        <option value="custom">指定城市</option>
-      </select>
-      <label>城市（选择“指定城市”时填写，如：杭州、上海）</label>
-      <input type="text" id="weatherCity" />
-      <label>天气数据源</label>
-      <select id="weatherProvider">
-        <option value="openmeteo">Open-Meteo（国际源，免密钥，国内可用）</option>
-        <option value="qweather">和风天气（国内源，需下方 Key）</option>
-      </select>
-      <label>和风天气 Key（旧版 API KEY 模式；仅在使用“和风天气”且未配置下方 JWT 时填写）</label>
-      <input type="text" id="weatherKey" placeholder="和风天气 Dev Key" />
-      <div style="margin-top:14px; border-top:1px dashed #cdd9e8; padding-top:12px;">
-        <label style="font-weight:600; color:#243b5e;">和风天气 JWT 鉴权（新版推荐，Ed25519 签名）</label>
-        <div class="row" style="margin-top:6px;">
-          <div style="flex:1">
-            <label>JWT 私钥（自动保存于服务端；公钥请上传到和风控制台）</label>
-            <textarea id="weatherPrivKey" rows="3" placeholder="-----BEGIN PRIVATE KEY----- ..."></textarea>
-          </div>
-          <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:8px; justify-content:flex-start;">
-            <button class="btn ghost sm" id="genKeyBtn" type="button">生成密钥对</button>
-            <button class="btn ghost sm" id="copyPubBtn" type="button">复制公钥</button>
-          </div>
-        </div>
-        <div id="pubKeyBox" style="display:none; margin-top:8px;">
-          <label>公钥（去 和风控制台 → 项目管理 → 你的项目 → 凭据 → 添加凭据，认证方式选“JSON Web Token”，粘贴下面内容）</label>
-          <textarea id="pubKeyArea" rows="3" readonly></textarea>
-        </div>
-        <div class="row" style="margin-top:8px;">
+    <!-- ============ 站点与样式 ============ -->
+    <section class="page" data-page="site">
+      <div class="card">
+        <h2><span class="dot"></span>站点与底部信息</h2>
+        <label>站点标题（浏览器标签名）</label>
+        <input type="text" id="siteTitle" />
+        <label>版权信息</label>
+        <input type="text" id="siteCopyright" placeholder="© 2026 OnlyTab" />
+        <div class="row">
           <div>
-            <label>凭据 ID（kid，控制台凭据处查看）</label>
-            <input type="text" id="weatherKid" placeholder="如 QWT12345" />
+            <label>ICP 备案号（底部展示，自动链接到 beian.miit.gov.cn）</label>
+            <input type="text" id="siteIcp" placeholder="京ICP备XXXXXXXX号" />
           </div>
           <div>
-            <label>项目 ID（sub，控制台项目管理处查看）</label>
-            <input type="text" id="weatherProjectId" placeholder="如 QWP12345" />
+            <label>网安备案号（底部展示，自动链接到 beian.gov.cn）</label>
+            <input type="text" id="sitePolice" placeholder="京公网安备 XXXXXXXXXXXXXX号" />
           </div>
         </div>
-        <div class="hint" style="font-size:12px; color:#5b6b82; margin-top:6px;">已配置 私钥 + kid + 项目ID 时自动走 JWT；否则回退旧版 Key 模式。私钥仅存服务端，公开接口已剔除。</div>
       </div>
-    </div>
 
-    <!-- 样式设置 -->
-    <div class="card">
-      <h2><span class="dot"></span>样式设置</h2>
-      <div class="row">
-        <div>
-          <label>每行标签个数（横排）</label>
-          <input type="number" id="styleColumns" min="1" max="16" step="1" />
+      <div class="card">
+        <h2><span class="dot"></span>样式设置（桌面端）</h2>
+        <div class="row">
+          <div><label>每行标签个数（横排）</label><input type="number" id="styleColumns" min="1" max="16" step="1" /></div>
+          <div><label>图标大小 (px)</label><input type="number" id="styleIconSize" min="24" max="128" step="2" /></div>
         </div>
-        <div>
-          <label>图标大小 (px)</label>
-          <input type="number" id="styleIconSize" min="24" max="128" step="2" />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>标签名称 粗细</label>
-          <select id="styleWeight">
-            <option value="300">细 (300)</option>
-            <option value="400">常规 (400)</option>
-            <option value="500">中等 (500)</option>
-            <option value="600">加粗 (600)</option>
-            <option value="700">特粗 (700)</option>
-          </select>
-        </div>
-        <div>
-          <label>显示读秒</label>
-          <select id="styleSeconds">
-            <option value="1">显示（时:分:秒）</option>
-            <option value="0">不显示（时:分）</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top:6px; border-top:1px dashed #cdd9e8; padding-top:12px;">
-        <label style="font-weight:600; color:#243b5e;">时钟 / 日期 字体</label>
-        <div class="row" style="margin-top:6px;">
+        <div class="row">
           <div>
-            <label>字号 (px)</label>
-            <input type="number" id="styleTimeSize" min="32" max="160" step="2" />
-          </div>
-          <div>
-            <label>粗细</label>
-            <select id="styleTimeWeight">
-              <option value="100">极细 (100)</option>
-              <option value="200">特细 (200)</option>
-              <option value="300">细 (300)</option>
-              <option value="400">常规 (400)</option>
-              <option value="500">中等 (500)</option>
-              <option value="600">加粗 (600)</option>
-              <option value="700">特粗 (700)</option>
+            <label>标签名称 粗细</label>
+            <select id="styleWeight">
+              <option value="300">细 (300)</option><option value="400">常规 (400)</option>
+              <option value="500">中等 (500)</option><option value="600">加粗 (600)</option><option value="700">特粗 (700)</option>
             </select>
           </div>
-        </div>
-        <div class="row">
           <div>
-            <label>时钟/日期 颜色（六位十六进制）</label>
-            <div class="color-row">
-              <input type="color" id="styleTimeColor" />
-              <input type="text" id="styleTimeColorHex" placeholder="#ffffff" maxlength="7" />
+            <label>显示读秒</label>
+            <select id="styleSeconds"><option value="1">显示（时:分:秒）</option><option value="0">不显示（时:分）</option></select>
+          </div>
+        </div>
+
+        <div style="margin-top:6px; border-top:1px dashed #cdd9e8; padding-top:12px;">
+          <label style="font-weight:600; color:#243b5e;">时钟 / 日期 字体（时钟与日期同步生效）</label>
+          <div class="row" style="margin-top:6px;">
+            <div><label>字号 (px)</label><input type="number" id="styleTimeSize" min="32" max="160" step="2" /></div>
+            <div>
+              <label>粗细</label>
+              <select id="styleTimeWeight">
+                <option value="100">极细 (100)</option><option value="200">特细 (200)</option>
+                <option value="300">细 (300)</option><option value="400">常规 (400)</option>
+                <option value="500">中等 (500)</option><option value="600">加粗 (600)</option><option value="700">特粗 (700)</option>
+              </select>
             </div>
           </div>
-          <div>
-            <label>标签名称 颜色（六位十六进制）</label>
-            <div class="color-row">
-              <input type="color" id="styleTabColor" />
-              <input type="text" id="styleTabColorHex" placeholder="#ffffff" maxlength="7" />
+          <div class="row">
+            <div>
+              <label>时钟/日期 颜色（六位十六进制）</label>
+              <div class="color-row"><input type="color" id="styleTimeColor" /><input type="text" id="styleTimeColorHex" placeholder="#ffffff" maxlength="7" /></div>
             </div>
+            <div>
+              <label>标签名称 颜色（六位十六进制）</label>
+              <div class="color-row"><input type="color" id="styleTabColor" /><input type="text" id="styleTabColorHex" placeholder="#ffffff" maxlength="7" /></div>
+            </div>
+          </div>
+          <div class="time-preview" id="timePreview">
+            <div class="tp-clock" id="tpClock">12:34:56</div>
+            <div class="tp-date" id="tpDate">2026年11月11日 星期三</div>
+          </div>
+          <div class="hint" style="font-size:12px;">↑ 实时预览，字号/粗细/颜色同时作用于时钟与日期两行。</div>
+        </div>
+
+        <div style="margin-top:12px; border-top:1px dashed #cdd9e8; padding-top:12px;">
+          <label style="font-weight:600; color:#243b5e; margin-top:0;">📱 手机端适配（屏宽 ≤ 760px 生效）</label>
+          <div class="row" style="margin-top:6px;">
+            <div><label>手机端 每行标签个数</label><input type="number" id="styleMobileColumns" min="1" max="10" step="1" /></div>
+            <div><label>手机端 图标大小 (px)</label><input type="number" id="styleMobileIcon" min="24" max="96" step="2" /></div>
+          </div>
+          <div class="row">
+            <div><label>手机端 时钟字号 (px)</label><input type="number" id="styleMobileTime" min="30" max="80" step="2" /></div>
+            <div><label>手机端 标签名称字号 (px)</label><input type="number" id="styleMobileFont" min="10" max="20" step="1" /></div>
+          </div>
+          <div class="row">
+            <div><label>手机端 最多显示标签数量（0 = 全部显示）</label><input type="number" id="styleMobileMaxTabs" min="0" max="200" step="1" /></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 背景 ============ -->
+    <section class="page hidden" data-page="bg">
+      <div class="card">
+        <h2><span class="dot"></span>背景模式</h2>
+        <div class="desc">选定一种模式后，其余模式的设置会变灰且不可编辑；保存后首页立即生效。</div>
+        <div class="mode-cards" id="bgModeCards">
+          <label class="mode-card" data-mode="default">
+            <input type="radio" name="bgMode" value="default" />
+            <div class="prev" style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 50%,#6dd5ed 100%)"></div>
+            <b>默认渐变</b><small>系统自带深蓝渐变</small>
+          </label>
+          <label class="mode-card" data-mode="preset">
+            <input type="radio" name="bgMode" value="preset" />
+            <div class="prev" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)"></div>
+            <b>预设渐变</b><small>5 套精选方案</small>
+          </label>
+          <label class="mode-card" data-mode="custom">
+            <input type="radio" name="bgMode" value="custom" />
+            <div class="prev" style="background:linear-gradient(135deg,#f6d365 0%,#fda085 100%)"></div>
+            <b>自定义颜色</b><small>两个十六进制色</small>
+          </label>
+          <label class="mode-card" data-mode="image">
+            <input type="radio" name="bgMode" value="image" />
+            <div class="prev" style="background-image:url('https://picsum.photos/seed/onlytab-a/300/180')"></div>
+            <b>背景图片</b><small>图床预设 / 上传 / URL</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>模式详细设置</h2>
+
+        <div class="bg-section" data-for="preset">
+          <div class="sec-title">预设渐变方案</div>
+          <div class="swatches" id="bgSwatches"></div>
+        </div>
+
+        <div class="bg-section" data-for="custom">
+          <div class="sec-title">自定义颜色（两个十六进制色，相同即纯色）</div>
+          <div class="row">
+            <div>
+              <label>渐变色 1（六位十六进制）</label>
+              <div class="color-row"><input type="color" id="bgColor1" /><input type="text" id="bgColor1Hex" placeholder="#1e3c72" maxlength="7" /></div>
+            </div>
+            <div>
+              <label>渐变色 2（六位十六进制）</label>
+              <div class="color-row"><input type="color" id="bgColor2" /><input type="text" id="bgColor2Hex" placeholder="#6dd5ed" maxlength="7" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-section" data-for="image">
+          <div class="sec-title">背景图片</div>
+          <label>图片预设（公开图床，不存本地）</label>
+          <div class="swatches" id="bgImages"></div>
+          <label>图片 URL（自定义，或点上方预设）</label>
+          <input type="text" id="bgImage" placeholder="https://... 图片地址" />
+          <label>本地上传</label>
+          <div class="upload-zone" id="bgUploadZone">
+            <div class="uz-icon">⬆</div>
+            <div class="uz-text"><b>上传背景图</b><small>点击选择，或把图片拖到这里（最大 8MB）</small></div>
+            <img class="uz-preview hidden" id="bgPreview" alt="预览" />
+            <button type="button" class="btn ghost sm" id="siteBgUp">选择图片</button>
+            <input type="file" id="siteBgFile" accept="image/*" class="hidden" />
+          </div>
+          <div style="margin-top:14px; border-top:1px dashed #cdd9e8; padding-top:10px;">
+            <label style="font-weight:600; color:#243b5e;">毛玻璃效果（作用于时钟搜索框、天气与日历面板）</label>
+            <div class="blur-row">
+              <label>模糊 (px)</label>
+              <input type="range" id="bgBlurRange" min="0" max="40" step="1" />
+              <input type="number" id="bgBlurNum" min="0" max="40" step="1" />
+            </div>
+            <div class="hint" style="font-size:12px; margin-top:6px;">0 = 完全透明清晰，数值越大背景越朦胧。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 搜索引擎 ============ -->
+    <section class="page hidden" data-page="search">
+      <div class="card">
+        <h2><span class="dot"></span>搜索引擎</h2>
+        <label>默认搜索引擎</label>
+        <select id="searchDefault"></select>
+        <label>引擎列表（搜索链接中使用 <code>{q}</code> 作为关键词占位符）</label>
+        <div id="engines"></div>
+        <button class="btn ghost sm" id="addEngine" style="margin-top:10px;">+ 添加引擎</button>
+      </div>
+    </section>
+
+    <!-- ============ 小组件 ============ -->
+    <section class="page hidden" data-page="widgets">
+      <div class="card">
+        <h2><span class="dot"></span>天气组件</h2>
+        <div class="desc">天气与日历是首页的两个小组件，可在首页直接拖动，与标签混排。</div>
+        <div class="row">
+          <div>
+            <label>定位方式</label>
+            <select id="weatherMode">
+              <option value="auto">自动（按访问者 IP 定位，国内源）</option>
+              <option value="custom">指定城市</option>
+            </select>
+          </div>
+          <div>
+            <label>城市（选择「指定城市」时填写，如：杭州、上海）</label>
+            <input type="text" id="weatherCity" />
+          </div>
+        </div>
+        <label>天气数据源</label>
+        <select id="weatherProvider">
+          <option value="openmeteo">Open-Meteo（国际源，免密钥）</option>
+          <option value="chinaweather">中国天气网（国内源，免登录免密钥，推荐）</option>
+          <option value="qweather">和风天气（国内源，仅支持新版 JWT）</option>
+        </select>
+        <div class="steps" id="providerNoteOpenmeteo">
+          <b>Open-Meteo</b>：无需注册、无需密钥，按经纬度取数；国内网络不稳时会自动回退到中国天气网。
+        </div>
+        <div class="steps hidden" id="providerNoteChina">
+          <b>中国天气网（免登录免密钥）</b>：直接调用 <code>weather.com.cn</code> 的公开数据，按城市名查城市码，返回实时温度与 5 天预报。不需要账号、不需要 Key，选中保存即可用。
+        </div>
+        <div class="steps hidden" id="providerNoteQweather">
+          <b>和风天气新版 JWT 操作步骤（旧版 API KEY 已移除）</b>
+          <ol>
+            <li>登录 <b>和风天气控制台</b> → <b>项目管理</b> → 创建项目（免费订阅即可），记下 <b>项目 ID</b>（形如 <code>QWP123456</code>）。</li>
+            <li>在该项目下点 <b>凭据</b> → <b>添加凭据</b>，认证方式选 <b>JSON Web Token (JWT)</b>。</li>
+            <li>在下方点「生成密钥对」，OnlyTab 会把 <b>私钥自动保存在服务端</b>，并展示 <b>公钥</b>；把公钥完整粘贴到第 2 步的控制台里保存。</li>
+            <li>回到控制台凭据列表，复制 <b>凭据 ID</b>（形如 <code>QWT123456</code>），填入下方「凭据 ID」；项目 ID 填入「项目 ID」。</li>
+            <li>点页面底部「保存」。之后 OnlyTab 会用 Ed25519 签名生成 JWT，通过 <code>Authorization: Bearer</code> 调用和风接口。私钥永不下发到浏览器。</li>
+          </ol>
+          <div class="hint" style="font-size:12px;">提示：JWT 未配置完整时会自动回退到中国天气网，天气不会空白。</div>
+        </div>
+
+        <div style="margin-top:14px; border-top:1px dashed #cdd9e8; padding-top:12px;">
+          <label style="font-weight:600; color:#243b5e;">和风天气 JWT 凭据</label>
+          <div class="row" style="margin-top:6px;">
+            <div style="flex:1">
+              <label>JWT 私钥（自动保存于服务端；公钥请上传到和风控制台）</label>
+              <textarea id="weatherPrivKey" rows="3" placeholder="-----BEGIN PRIVATE KEY----- ..."></textarea>
+            </div>
+            <div style="flex:0 0 auto; display:flex; flex-direction:column; gap:8px;">
+              <button class="btn ghost sm" id="genKeyBtn" type="button">生成密钥对</button>
+              <button class="btn ghost sm" id="copyPubBtn" type="button">复制公钥</button>
+            </div>
+          </div>
+          <div id="pubKeyBox" style="display:none; margin-top:8px;">
+            <label>公钥（粘贴到 和风控制台 → 项目管理 → 凭据 → JSON Web Token）</label>
+            <textarea id="pubKeyArea" rows="3" readonly></textarea>
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <div><label>凭据 ID（kid，控制台凭据处查看）</label><input type="text" id="weatherKid" placeholder="如 QWT12345" /></div>
+            <div><label>项目 ID（sub，控制台项目管理处查看）</label><input type="text" id="weatherProjectId" placeholder="如 QWP12345" /></div>
           </div>
         </div>
       </div>
 
-      <!-- 手机端适配：与桌面端设置相互独立，仅屏宽 <= 760px 生效 -->
-      <div style="margin-top:12px; border-top:1px dashed #cdd9e8; padding-top:12px;">
-        <label style="font-weight:600; color:#243b5e; margin-top:0;">📱 手机端适配（屏宽 ≤ 760px 生效）</label>
-        <div class="row" style="margin-top:6px;">
-          <div>
-            <label>手机端 每行标签个数</label>
-            <input type="number" id="styleMobileColumns" min="1" max="10" step="1" />
-          </div>
-          <div>
-            <label>手机端 图标大小 (px)</label>
-            <input type="number" id="styleMobileIcon" min="24" max="96" step="2" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>手机端 时钟字号 (px)</label>
-            <input type="number" id="styleMobileTime" min="30" max="80" step="2" />
-          </div>
-          <div>
-            <label>手机端 标签名称字号 (px)</label>
-            <input type="number" id="styleMobileFont" min="10" max="20" step="1" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>手机端 最多显示标签数量（0 = 全部显示）</label>
-            <input type="number" id="styleMobileMaxTabs" min="0" max="200" step="1" />
-          </div>
-          <div>
-            <label>说明</label>
-            <div class="hint" style="font-size:12px; color:#5b6b82; padding:9px 0;">
-              桌面端沿用上方设置；手机端单独缩小字号/图标并调整每行个数。标签过多时可限制数量，首页会按添加顺序截取。
-            </div>
-          </div>
-        </div>
+      <div class="card">
+        <h2><span class="dot"></span>布局与排序</h2>
+        <div class="desc">首页的天气、日历与所有标签在同一个面板里，可直接拖动混排：鼠标按住拖动，手机长按后拖动。排序会保存到服务端，所有设备同步。</div>
+        <button class="btn ghost" type="button" id="resetLayoutBtn">恢复默认顺序（小组件在前）</button>
+        <span class="status" id="layoutStatus" style="margin-left:10px;"></span>
       </div>
-    </div>
+    </section>
 
-    <!-- 标签 -->
-    <div class="card">
-      <h2><span class="dot"></span>导航标签（紧凑编辑；每行个数见「样式设置」）</h2>
-      <div id="tabs" class="tabs-grid"></div>
-      <button class="btn ghost sm" id="addTab" style="margin-top:10px;">+ 添加标签</button>
-    </div>
+    <!-- ============ 标签 ============ -->
+    <section class="page hidden" data-page="tabs">
+      <div class="card">
+        <h2><span class="dot"></span>导航标签</h2>
+        <div class="desc">紧凑多列编辑。点击图标框或「预设图标」可从 20 个本地内置图标里选择（已保存到 public/icons，不再依赖图床）。</div>
+        <div id="tabs" class="tabs-grid"></div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn ghost sm" id="addTab">+ 添加标签</button>
+          <button class="btn ghost sm" type="button" id="syncOrderBtn">同步本机排序到服务器</button>
+        </div>
+        <div class="hint" style="font-size:12px; margin-top:8px;">标签顺序以首页拖动结果为准；此处 ↑/↓ 仍可调整列表顺序。</div>
+      </div>
+    </section>
+
+    <!-- ============ 登录账号 ============ -->
+    <section class="page hidden" data-page="account">
+      <div class="card">
+        <h2><span class="dot"></span>登录账号</h2>
+        <label>用户名（默认 admin，可修改）</label>
+        <input type="text" id="accUser" placeholder="admin" />
+        <label style="margin-top:10px;">新密码（留空则仅修改用户名；填写则至少 6 位）</label>
+        <input type="password" id="accPass" placeholder="不修改请留空" />
+        <div style="margin-top:12px;"><button class="btn" id="accBtn">修改账号 / 密码</button></div>
+        <div id="accStatus" style="font-size:12px; margin-top:8px;"></div>
+      </div>
+    </section>
 
     <div class="savebar">
       <div class="inner">
         <span class="status" id="status"></span>
-        <button class="btn ghost" id="resetBtn">恢复默认</button>
-        <button class="btn" id="saveBtn">保存</button>
+        <button class="btn ghost" type="button" id="resetBtn">恢复默认</button>
+        <button class="btn" type="button" id="saveBtn">保存</button>
       </div>
     </div>
   </div>
@@ -353,7 +459,7 @@
   <!-- 预设图标选择弹层 -->
   <div class="iconpick" id="iconPick">
     <div class="box">
-      <div class="topbar"><b>选择预设图标（来自 xg-icons-hub，经服务端代理）</b><span class="pickbtn" id="iconPickClose">关闭 ✕</span></div>
+      <div class="topbar"><b>选择预设图标（本地内置 · /icons）</b><span class="pickbtn" id="iconPickClose">关闭 ✕</span></div>
       <div class="grid" id="iconPickGrid"></div>
     </div>
   </div>

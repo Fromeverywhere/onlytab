@@ -2,18 +2,22 @@
   --glass: rgba(255, 255, 255, 0.14);
   --glass-strong: rgba(255, 255, 255, 0.22);
   --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-blur: 14px;   /* 毛玻璃强度，管理页「背景」可调 */
   --text: #ffffff;
   --text-dim: rgba(255, 255, 255, 0.72);
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   --radius: 16px;
-  /* 内容统一宽度：时钟/搜索、天气日历面板、标签网格 三者齐平 */
+  /* 内容统一宽度：时钟/搜索、混排面板 两者齐平 */
   --content-w: min(1100px, 95vw);
   /* 时间字体 / 标签名称颜色（管理页可调，支持六位十六进制） */
-  --time-weight: 200;
+  --time-weight: 400;
   --time-size: 76px;
   --time-color: #ffffff;
   --tab-color: #ffffff;
-  /* 手机端独立可调（由管理页「手机端适配」写入） */
+  /* 每行个数 / 小组件占位列数 */
+  --cols: 8;
+  --widget-span: 4;
+  /* 手机端独立可调（由管理页「站点与样式」写入） */
   --mcols: 4;            /* 手机端每行个数 */
   --micon: 38px;         /* 手机端图标大小 */
   --mtime-size: 40px;    /* 手机端时钟字号 */
@@ -45,8 +49,8 @@ a { color: inherit; text-decoration: none; }
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(var(--glass-blur, 14px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 14px));
   box-shadow: var(--shadow);
   border-radius: var(--radius);
 }
@@ -64,15 +68,18 @@ a { color: inherit; text-decoration: none; }
 
 .clock {
   font-size: clamp(44px, 9vw, var(--time-size, 76px));
-  font-weight: var(--time-weight, 200);
+  font-weight: var(--time-weight, 400);
   letter-spacing: 2px;
   line-height: 1.05;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
   font-variant-numeric: tabular-nums;
   color: var(--time-color, #ffffff);
 }
+/* 日期行也跟随「时钟/日期」的字号与粗细（v0.2 修复：此前被写死） */
 .date {
-  font-size: clamp(14px, 2.2vw, 20px);
+  font-size: clamp(13px, calc(var(--time-size, 76px) * 0.26), 24px);
+  font-weight: var(--time-weight, 400);
+  letter-spacing: 1px;
   color: var(--time-color, #ffffff);
   opacity: 0.85;
   margin-top: 6px;
@@ -87,62 +94,108 @@ a { color: inherit; text-decoration: none; }
   padding: 6px 6px 6px 8px;
 }
 .search select {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 15px;
-  padding: 8px 6px;
-  cursor: pointer;
-  outline: none;
+  background: transparent; border: none; color: var(--text);
+  font-size: 15px; padding: 8px 6px; cursor: pointer; outline: none;
 }
 .search select option { color: #222; }
 .search .divider { width: 1px; height: 22px; background: var(--glass-border); margin: 0 4px; }
 .search input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text);
-  font-size: 16px;
-  padding: 10px 8px;
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 16px; padding: 10px 8px;
 }
 .search input::placeholder { color: var(--text-dim); }
 .search button {
-  background: var(--glass-strong);
-  border: none;
-  color: var(--text);
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 17px;
-  transition: background 0.2s;
+  background: var(--glass-strong); border: none; color: var(--text);
+  width: 40px; height: 40px; border-radius: 12px;
+  cursor: pointer; font-size: 17px; transition: background 0.2s;
 }
 .search button:hover { background: rgba(255,255,255,0.34); }
 
-/* ---------- 中部：天气 + 日历 ---------- */
-.panels {
+/* ---------- 混排面板：小组件 + 标签（可拖动排序） ---------- */
+.board {
   margin-top: 30px;
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  justify-content: center;
   width: var(--content-w);
   max-width: 100%;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 8), minmax(0, 1fr));
+  gap: 16px 10px;
+  align-items: start;
 }
-.panel { padding: 18px 20px; flex: 1 1 320px; min-width: 280px; }
+.board-item {
+  min-width: 0;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+.board-item.widget { grid-column: span var(--widget-span, 4); }
+.board-item .panel { width: 100%; min-width: 0; padding: 18px 20px; }
 
-.weather-head { display: flex; justify-content: space-between; align-items: baseline; }
+/* 拖动反馈：只在拖动过程中出现，平时标签周围没有任何框 */
+.board-item.dragging { opacity: 0.35; }
+.board-item.drag-ready { outline: 2px dashed rgba(255,255,255,0.55); outline-offset: 2px; border-radius: 12px; }
+.board-item.drop-before::before,
+.board-item.drop-after::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 4px;
+  border-radius: 2px; z-index: 3;
+  background: rgba(255,255,255,0.9); box-shadow: 0 0 10px rgba(255,255,255,0.7);
+}
+.board-item.drop-before::before { left: -3px; }
+.board-item.drop-after::after { right: -3px; }
+body.dragging-active { cursor: grabbing; }
+body.dragging-active * { cursor: grabbing !important; }
+
+/* 标签：容器本身没有任何背景/描边/焦点框，只有图标与名称是可点链接 */
+.board-item.tab {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 10px 2px;
+  background: transparent; border: none; outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.board-item.tab .hit {
+  display: block; max-width: 100%; outline: none; border-radius: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.board-item.tab .hit:focus,
+.board-item.tab .hit:focus-visible { outline: none; box-shadow: none; }
+.board-item.tab .name-hit { max-width: 100%; }
+/* 仅图标/名称本身有轻微反馈，容器不出现透明长方形 */
+@media (hover: hover) {
+  .board-item.tab .icon-hit:hover .icon { filter: brightness(1.15); }
+  .board-item.tab .name-hit:hover .name { text-decoration: underline; }
+}
+.board-item.tab .icon {
+  width: var(--icon-size, 46px); height: var(--icon-size, 46px);
+  border-radius: 12px;
+  background: var(--glass-strong);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  font-size: calc(var(--icon-size, 46px) * 0.44); font-weight: 600;
+  transition: filter 0.2s;
+}
+.board-item.tab .icon img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.board-item.tab .name {
+  font-size: 13px; color: var(--tab-color, #ffffff);
+  font-weight: var(--tab-weight, 400);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+}
+
+/* ---------- 天气 / 日历 小组件内部 ---------- */
+.weather-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .weather-city { font-size: 16px; color: var(--text-dim); }
 .weather-temp { font-size: 40px; font-weight: 300; margin-top: 6px; }
 .weather-desc { color: var(--text-dim); font-size: 14px; margin-top: 2px; }
 .weather-hl { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
 .forecast { display: flex; gap: 10px; margin-top: 14px; }
-.fc-day { flex: 1; text-align: center; font-size: 13px; }
+.fc-day { flex: 1; text-align: center; font-size: 13px; min-width: 0; }
 .fc-day .d { color: var(--text-dim); }
 .fc-day .e { font-size: 22px; margin: 4px 0; }
 .fc-day .t { font-size: 12px; }
 
-.calendar-head { display: flex; justify-content: space-between; align-items: center; }
+.calendar-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .calendar-title { font-size: 16px; }
 .calendar-big { font-size: 54px; font-weight: 200; line-height: 1; margin: 4px 0; }
 .calendar-sub { color: var(--text-dim); font-size: 13px; }
@@ -152,124 +205,77 @@ a { color: inherit; text-decoration: none; }
 .calendar-grid .cell.today { background: var(--glass-strong); font-weight: 600; }
 .calendar-grid .cell.out { opacity: 0.35; }
 
-/* ---------- 标签网格 ---------- */
-.tabs-wrap {
-  margin-top: 34px;
-  width: var(--content-w);
-  max-width: 100%;
-  display: grid;
-  grid-template-columns: repeat(var(--cols, 8), 1fr);
-  gap: 14px 10px;
-  padding: 0 10px;
-}
-.tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 4px;
-  border-radius: 14px;
-  transition: background 0.2s, transform 0.2s;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-/* 触屏设备上 :hover 会「粘住」，只在真正有鼠标时才启用悬浮效果 */
-@media (hover: hover) {
-  .tab:hover { background: var(--glass); transform: translateY(-3px); }
-}
-.tab:active { transform: scale(0.96); }
-.tab .icon {
-  width: var(--icon-size, 46px); height: var(--icon-size, 46px);
-  border-radius: 12px;
-  background: var(--glass-strong);
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  font-size: calc(var(--icon-size, 46px) * 0.44); font-weight: 600;
-}
-.tab .icon img { width: 100%; height: 100%; object-fit: cover; }
-.tab .name {
-  font-size: 13px; color: var(--tab-color, #ffffff);
-  font-weight: var(--tab-weight, 400);
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.4);
-}
-
 /* ---------- 底部 ---------- */
 .footer {
-  margin-top: auto;
-  padding: 18px 16px 22px;
-  text-align: center;
-  font-size: 12.5px;
-  color: var(--text-dim);
-  line-height: 1.9;
+  margin-top: auto; padding: 18px 16px 22px;
+  text-align: center; font-size: 12.5px; color: var(--text-dim); line-height: 1.9;
   text-shadow: 0 1px 6px rgba(0,0,0,0.35);
 }
 .footer a:hover { color: var(--text); text-decoration: underline; }
 .footer .sep { margin: 0 8px; opacity: 0.5; }
 
+/* ---------- 排序提示 ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
+  background: rgba(15, 36, 64, 0.88); color: #fff;
+  padding: 9px 16px; border-radius: 999px; font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 120;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
 /* ==========================================================
    手机端适配（屏宽 <= 760px）
-   桌面端设置不受影响；此处所有尺寸/个数均由管理页「手机端适配」控制
    ========================================================== */
 @media (max-width: 760px) {
-  /* 三块内容统一左右边距，保证时钟/天气日历/标签仍然齐平 */
   :root { --content-w: 100%; --edge: 12px; }
-  .top, .panels, .tabs-wrap {
-    padding-left: var(--edge);
-    padding-right: var(--edge);
-  }
-  /* iOS 上 fixed 背景会被放大/抖动，改用随页面滚动 */
+  .top, .board { padding-left: var(--edge); padding-right: var(--edge); }
   body { background-attachment: scroll; }
 
-  /* ---- 顶部：时钟 + 搜索 ---- */
   .top { margin-top: clamp(16px, 4vh, 30px); }
-  .clock {
-    font-size: clamp(30px, 12vw, var(--mtime-size, 40px));
-    letter-spacing: 1px;
+  .clock { font-size: clamp(30px, 12vw, var(--mtime-size, 40px)); letter-spacing: 1px; }
+  .date {
+    font-size: clamp(11px, calc(var(--mtime-size, 40px) * 0.33), 16px);
+    font-weight: var(--time-weight, 400);
+    margin-top: 4px;
   }
-  .date { font-size: 13px; margin-top: 4px; }
   .search { margin-top: 18px; width: 100%; padding: 5px 5px 5px 6px; }
   .search select { font-size: 14px; padding: 7px 4px; max-width: 92px; }
   .search .divider { height: 20px; }
-  .search input { font-size: 16px; padding: 9px 6px; } /* 16px 可避免 iOS 聚焦自动放大 */
+  .search input { font-size: 16px; padding: 9px 6px; }
   .search button { width: 38px; height: 38px; border-radius: 10px; }
 
-  /* ---- 中部：天气 + 日历（窄屏改为上下堆叠） ---- */
-  .panels { margin-top: 20px; gap: 12px; }
-  .panel { flex: 1 1 100%; min-width: 0; padding: 14px 16px; }
+  .board {
+    margin-top: 20px;
+    grid-template-columns: repeat(var(--mcols, 4), minmax(0, 1fr));
+    gap: 12px 6px;
+  }
+  .board-item.widget { grid-column: 1 / -1; } /* 手机上小组件整行 */
+  .board-item .panel { padding: 14px 16px; }
   .weather-temp { font-size: 34px; }
   .weather-city, .calendar-title { font-size: 14px; }
   .calendar-big { font-size: 44px; }
   .forecast { gap: 6px; }
   .fc-day .e { font-size: 19px; }
 
-  /* ---- 标签网格：每行个数 + 图标/字号 ---- */
-  .tabs-wrap {
-    margin-top: 22px;
-    grid-template-columns: repeat(var(--mcols, 4), minmax(0, 1fr));
-    gap: 12px 6px;
-  }
-  .tab { padding: 10px 2px; gap: 6px; border-radius: 12px; }
-  .tab .icon {
-    width: var(--micon, 38px);
-    height: var(--micon, 38px);
-    max-width: 100%; /* 大图标 + 多列时也不撑破网格 */
-    border-radius: 10px;
+  .board-item.tab { padding: 8px 2px; gap: 6px; }
+  .board-item.tab .icon {
+    width: var(--micon, 38px); height: var(--micon, 38px);
+    max-width: 100%; border-radius: 10px;
     font-size: calc(var(--micon, 38px) * 0.44);
   }
-  .tab .name { font-size: var(--mtab-font, 12px); }
+  .board-item.tab .name { font-size: var(--mtab-font, 12px); }
 
-  /* ---- 底部 ---- */
   .footer { padding: 14px 12px 18px; font-size: 11.5px; line-height: 1.8; }
 }
 
-/* 超小屏（<= 360px）再收紧一点，避免时钟和标签挤爆 */
+/* 超小屏（<= 360px）再收紧一点 */
 @media (max-width: 360px) {
   :root { --edge: 8px; }
   .clock { font-size: clamp(26px, 11vw, var(--mtime-size, 40px)); letter-spacing: 0; }
   .date { font-size: 12px; }
-  .tabs-wrap { gap: 10px 4px; }
-  .panel { padding: 12px 12px; }
+  .board { gap: 10px 4px; }
+  .board-item .panel { padding: 12px 12px; }
   .footer { font-size: 11px; }
 }
 

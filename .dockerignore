@@ -1,5 +1,8 @@
 node_modules
 data
+data_backup_*
+_data_backup_*
 .git
 .gitignore
 *.log
+_onlytab_bundle.tar.gz
